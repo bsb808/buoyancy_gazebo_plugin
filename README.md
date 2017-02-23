@@ -1,1 +1,2 @@
-# buoyancy_gazebo_plugin
+# usv_gazebo_plugins
+Unmanned Surface Vehicle plugins for Gazebo simulation
