@@ -120,9 +120,12 @@ void BuoyancyPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 
   // For links the user didn't input, precompute the center of volume and
   // density. This will be accurate for simple shapes.
-  /*
-  for (auto link : this->model->GetLinks())
-  {
+  //for (auto link : this->model->GetLinks()){
+  physics::Link_V links = this->model->GetLinks();
+  physics::LinkPtr link;
+  for (int ii=0; ii<links.size(); ii++){
+    link = links[ii];
+
     int id = link->GetId();
     if (this->volPropsMap.find(id) == this->volPropsMap.end())
     {
@@ -131,19 +134,25 @@ void BuoyancyPlugin::Load(physics::ModelPtr _model, sdf::ElementPtr _sdf)
 
       // The center of volume of the link is a weighted average over the pose
       // of each collision shape, where the weight is the volume of the shape
-      for (auto collision : link->GetCollisions())
-      {
-        double volume = collision->GetShape()->ComputeVolume();
+      //for (auto collision : link->GetCollisions()){
+      physics::Collision_V colls = link->GetCollisions();
+      physics::CollisionPtr collision;
+      for (int jj=0; jj<colls.size();jj++){
+	collision=colls[jj];
+        //double volume = collision->GetShape()->ComputeVolume();
+	double volume = 1.0;  // HACK
         volumeSum += volume;
-        weightedPosSum += volume*collision->WorldPose().Pos();
+	//weightedPosSum += volume*collision->WorldPose().Pos();
+        weightedPosSum += volume*collision->GetWorldPose().pos;
       }
       // Subtract the center of volume into the link frame.
       this->volPropsMap[id].cov =
-          weightedPosSum/volumeSum - link->WorldPose().Pos();
+	weightedPosSum/volumeSum - link->GetWorldPose().pos;
+	//weightedPosSum/volumeSum - link->WorldPose().Pos();
       this->volPropsMap[id].volume = volumeSum;
     }
   }
-  */
+
 }
 
 /////////////////////////////////////////////////
@@ -156,9 +165,13 @@ void BuoyancyPlugin::Init()
 /////////////////////////////////////////////////
 void BuoyancyPlugin::OnUpdate()
 {
-  /*
-  for (auto link : this->model->GetLinks())
-  {
+
+
+  //  for (auto link : this->model->GetLinks()){
+  physics::Link_V links = this->model->GetLinks();
+  physics::LinkPtr link;
+  for (int ii=0; ii<links.size(); ii++){
+    link = links[ii];
     VolumeProperties volumeProperties = this->volPropsMap[link->GetId()];
     double volume = volumeProperties.volume;
     GZ_ASSERT(volume > 0, "Nonpositive volume found in volume properties!");
@@ -167,15 +180,20 @@ void BuoyancyPlugin::OnUpdate()
     // buoyancy = -(mass*gravity)*fluid_density/object_density
     // object_density = mass/volume, so the mass term cancels.
     // Therefore,
+    //    math::Vector3 buoyancy =
+    //    -this->fluidDensity * volume * this->model->GetWorld()->Gravity();
+    math::Vector3 gravity(0,0,-9.81);
     math::Vector3 buoyancy =
-        -this->fluidDensity * volume * this->model->GetWorld()->Gravity();
-
-    math::Pose linkFrame = link->WorldPose();
+      -this->fluidDensity * volume * gravity;
+    //math::Pose linkFrame = link->WorldPose();
+    math::Pose linkFrame = link->GetWorldPose();
     // rotate buoyancy into the link frame before applying the force.
     math::Vector3 buoyancyLinkFrame =
-        linkFrame.Rot().Inverse().RotateVector(buoyancy);
+      linkFrame.rot.GetInverse().RotateVector(buoyancy);
+      //linkFrame.Rot().Inverse().RotateVector(buoyancy);
 
-    link->AddLinkForce(buoyancyLinkFrame, volumeProperties.cov);
+    //link->AddLinkForce(buoyancyLinkFrame, volumeProperties.cov);
+    link->AddForceAtRelativePosition(buoyancyLinkFrame, volumeProperties.cov);
   }
-  */
+
 }
