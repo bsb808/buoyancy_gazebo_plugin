@@ -254,11 +254,11 @@ void BuoyancyPlugin::OnUpdate()
     //math::Pose linkFrame = link->WorldPose();
     math::Pose linkFrame = link->GetWorldPose();
 
-    // Location of bottom of object relative to the fluid surface
+    // Location of bottom of object relative to the fluid surface - assumes origin is at cog of the object
     double bottomRelSurf = this->fluidLevel - (linkFrame.pos.z - height/2.0);
     // Adjust volume of object depending on surface interaction
-    //gzmsg << "level" << this->fluidLevel << std::endl;
-    //gzmsg << "height" << height << std::endl;
+    //gzmsg << "level: " << this->fluidLevel << std::endl;
+    //gzmsg << "height: " << height << std::endl;
     //gzmsg << "brs: " <<bottomRelSurf << std::endl;
     //gzmsg << "z: " << linkFrame.pos.z << std::endl;
 
@@ -270,6 +270,9 @@ void BuoyancyPlugin::OnUpdate()
       {
 	volume = bottomRelSurf *area;
       }
+    else{
+      volume = height*area;
+    }
 
     //gzmsg << "volume = [" << volume << "]" << std::endl;
     GZ_ASSERT(volume >= 0, "Nonpositive volume found in volume properties!");
